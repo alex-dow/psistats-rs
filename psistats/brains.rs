@@ -2,6 +2,8 @@ use std::thread;
 use std::time::Duration;
 use rumqtt::{MqttClient, QoS, Notification};
 use crossbeam_channel::{Receiver, Sender};
+use psistats::plugins::cpu_usage::start_cpu_usage_thread;
+use psistats::plugins::mem_usage::start_mem_usage_thread;
 
 use crate::psistats;
 
@@ -30,9 +32,20 @@ pub fn listen_tick(short_sleep_time: &Duration, long_sleep_time: &Duration, mqtt
     }
 }
 
-pub fn publisher(sleep_time: &Duration, mqtt_client:&mut MqttClient, service_rx: &Receiver<String>) {
+pub fn publisher(service_rx: &Receiver<String>, service_tx: &Sender<String>) {
     //if let Ok(cmd) = service_rx.try_recv() {
-        psistats::plugins::cpu_usage_total();
+        start_cpu_usage_thread(1000, service_tx);
+        start_mem_usage_thread(5000, service_tx);
+
+        loop {
+            let msg = service_rx.recv();
+            match msg {
+                Ok(m) => println!("[publisher] {:?}", m),
+                Err(_) => {}
+            };
+        }
+        //psistats::plugins::cpu_usage_total();
+        //thread::sleep(*sleep_time);
         //println!("[publisher] service_rx reported: {:?}", cmd);
     //}
 }
