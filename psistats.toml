@@ -1,0 +1,8 @@
+[cpu-usage]
+interval=1
+
+[mem-usage]
+interval=5
+
+[ip-addrs]
+interval=0
