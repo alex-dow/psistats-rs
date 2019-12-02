@@ -5,6 +5,12 @@ license = "MIT"
 authors = ["Alex Dow <adow@psikon.com>"]
 edition = "2018"
 publish = false
+include = ["psistats.toml", "psistats-service.exe", "psistats-service.xml"]
+description = "Psistats system metrics reporting tool"
+homepage = "https://www.psikon.org"
+repository = "https://github.com/psistats/psistats-rs"
+readme = "README.md"
+
 
 [dependencies]
 crossbeam-channel = "0.3.9"
