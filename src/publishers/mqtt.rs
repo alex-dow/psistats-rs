@@ -24,10 +24,10 @@ impl Mqtt {
         }
     }
 
-    fn get_client(&mut self, conf: &Map<String, Value>) -> MqttClient {
+    fn get_client(&mut self, conf: &Map<String, Value>) -> Option<MqttClient> {
         match &self.client {
             Some(client) => {
-                return client.clone();
+                return Some(client.clone());
             },
             None => {
                 let settings  = conf.get("settings").unwrap().as_table().unwrap();
@@ -46,6 +46,27 @@ impl Mqtt {
                 let mqtt_options = MqttOptions::new(client_id, mqtt_host, mqtt_port as u16)
                     .set_security_opts(SecurityOptions::UsernamePassword(mqtt_user.to_string(), mqtt_pass.to_string()));
                 
+                match MqttClient::start(mqtt_options) {
+                    Ok(ok) => {
+                        let mut mqtt_client = ok.0;
+                        let notifications = ok.1;
+
+                        let commands_topic = format!("{}/commands", publish_queue);
+                        mqtt_client.subscribe(commands_topic, QoS::AtLeastOnce).unwrap();
+        
+                        self.client = Option::from(mqtt_client.clone());
+                        self.queue  = Option::from(notifications);
+                        self.suffix = Option::from(publish_queue);
+        
+                        return Some(mqtt_client);
+                    },
+                    Err(err) => {
+                        error!("{:?}", err);
+                        return None;
+                    }
+                }
+
+                /*
                 let (mut mqtt_client, notifications) = MqttClient::start(mqtt_options).unwrap();
 
                 let commands_topic = format!("{}/commands", publish_queue);
@@ -56,6 +77,7 @@ impl Mqtt {
                 self.suffix = Option::from(publish_queue);
 
                 return mqtt_client;
+                */
             }
         }
     }
@@ -64,11 +86,18 @@ impl Mqtt {
 
 pub fn publish(conf: &Map<String, Value>, report: &Report) {
     let mut mqtt = CLIENT.lock().unwrap();
-    let mut client   = mqtt.get_client(conf);
-    let queue    = format!("{}/reports/{}", mqtt.suffix.as_ref().unwrap(), report.id);
+    let client   = mqtt.get_client(conf);
+    
 
+    match client {
+        Some(mut c) => {
+            let queue = format!("{}/reports/{}", mqtt.suffix.as_ref().unwrap(), report.id);
+            c.publish(queue, QoS::AtLeastOnce, false, report.to_json()).unwrap();
+        },
+        None => ()
+    }
 
-    client.publish(queue, QoS::AtLeastOnce, false, report.to_json()).unwrap();
+    // client.publish(queue, QoS::AtLeastOnce, false, report.to_json()).unwrap();
 }
 
 pub fn commander(_conf: &Map<String, Value>) -> Option<String> {
