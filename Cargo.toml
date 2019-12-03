@@ -11,8 +11,25 @@ homepage = "https://www.psikon.org"
 repository = "https://github.com/psistats/psistats-rs"
 readme = "README.md"
 
+[package.metadata.deb]
+maintainer = "Alex Dow <adow@psikon.com>"
+copyright = "2019, Alex Dow <adow@psikon.com>"
+license-file = ["LICENSE", "0"]
+extended-description = """\
+A simple system metrics reporting tool"""
+depends = "$auto, systemd"
+section = "utility"
+priority = "optional"
+conf-files = ["/etc/psistats/psistats.toml"]
+assets = [
+    ["target/release/psistats", "usr/bin/", "755"],
+    ["psistats.toml", "etc/psistats/", "644"],
+    ["systemd/psistats.service", "etc/systemd/system/", "644"]
+]
+
 
 [dependencies]
+clap = "2.33.0"
 crossbeam-channel = "0.3.9"
 get_if_addrs = "0.5.3"
 hostname = "0.2.0"

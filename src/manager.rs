@@ -21,22 +21,27 @@ pub fn start_publishers(conf: Value, reports_receiver: Receiver<Report>, command
         let c = conf.as_table().unwrap();
 
         for conf_section in c.keys() {
-            if conf_section.starts_with("p_") {        
+            if conf_section.starts_with("p_") {
+
                 let publisher_id = str::replace(conf_section, "p_", "");
-                
-                match get_publisher(publisher_id.clone()) {
-                    Some(publisher) => {
-                        info!("Enabled publisher: {}", publisher_id);
-                        publishers.push(publisher);
-                    }
-                    None => ()
-                }
-                match get_commander(publisher_id.clone()) {
-                    Some(publisher) => {
-                        info!("Enabled commander: {}", publisher_id);
-                        commanders.push(publisher);
-                    }
-                    None => ()
+                let enabled = c[conf_section]["enabled"].as_bool().unwrap();
+
+                if enabled == true {
+
+                  match get_publisher(publisher_id.clone()) {
+                      Some(publisher) => {
+                          info!("Enabled publisher: {}", publisher_id);
+                          publishers.push(publisher);
+                      }
+                      None => ()
+                  }
+                  match get_commander(publisher_id.clone()) {
+                      Some(publisher) => {
+                          info!("Enabled commander: {}", publisher_id);
+                          commanders.push(publisher);
+                      }
+                      None => ()
+                  }
                 }
             }
         }
@@ -71,37 +76,41 @@ pub fn start_reporters(conf: Value, reports_sender: Sender<Report>, commands_rec
 
         let c = conf.as_table().unwrap();
         let settings = c["settings"].as_table().unwrap();
-    
+
         let workers = settings["workers"].as_integer().unwrap() as u64;
         let timer   = settings["timer"].as_integer().unwrap() as u64;
-        
+
         let mut reporters: HashMap<u64, Vec<ReporterCb>> = HashMap::new();
-    
+
         let mut max_counter = 1;
-    
+
         for conf_section in c.keys() {
             if conf_section.starts_with("r_") {
                 let reporter_id = str::replace(conf_section, "r_", "");
-                match get_reporter(reporter_id.clone()) {
-                    Some(reporter) => {
-                        info!("Enabled reporter: {}", reporter_id);
-                        let interval = c[conf_section]["interval"].as_integer().unwrap() as u64;
-                        if interval > max_counter {
-                            max_counter = interval;
-                        }
-    
-                        if reporters.contains_key(&interval) {
-                            reporters.get_mut(&interval).unwrap().push(reporter);
-                        } else {
-                            reporters.insert(interval, Vec::new());
-                            reporters.get_mut(&interval).unwrap().push(reporter);
-                        }
-                    },
-                    None => println!("No reporter found for {}", reporter_id)
+                let enabled = c[conf_section]["enabled"].as_bool().unwrap();
+
+                if enabled == true {
+                  match get_reporter(reporter_id.clone()) {
+                      Some(reporter) => {
+                          info!("Enabled reporter: {}", reporter_id);
+                          let interval = c[conf_section]["interval"].as_integer().unwrap() as u64;
+                          if interval > max_counter {
+                              max_counter = interval;
+                          }
+
+                          if reporters.contains_key(&interval) {
+                              reporters.get_mut(&interval).unwrap().push(reporter);
+                          } else {
+                              reporters.insert(interval, Vec::new());
+                              reporters.get_mut(&interval).unwrap().push(reporter);
+                          }
+                      },
+                      None => println!("No reporter found for {}", reporter_id)
+                  }
                 }
             }
         }
-    
+
         let mut pool = Pool::new(workers as u32);
         let mut counter = 1;
         let intervals: Vec<u64> = reporters.keys().cloned().filter(|i| {
@@ -118,7 +127,7 @@ pub fn start_reporters(conf: Value, reports_sender: Sender<Report>, commands_rec
                         match get_reporter(cmd.clone()) {
                             Some(reporter) => {
                                 let report = reporter(c);
-                                reports_sender.send(report).unwrap();                                
+                                reports_sender.send(report).unwrap();
                             }
                             None => println!("{} reporter not found", cmd)
                         }
@@ -144,7 +153,7 @@ pub fn start_reporters(conf: Value, reports_sender: Sender<Report>, commands_rec
                                 let report = reporter(c);
                                 rs_clone.send(report).unwrap();
                             });
-                            
+
                         }
                     }
                 }
