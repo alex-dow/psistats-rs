@@ -79,7 +79,7 @@
                       <File Id='PsistatsServiceExeFile'
                         Name='psistats-service.exe'
                         DiskId='1'
-                        Source='psistats-service.exe'
+                        Source='wix\psistats-service.exe'
                         KeyPath='yes'/>
                     </Component>
                     <Component Id='PsistatsToml' Guid='*' Win64='$(var.Win64)'>
@@ -93,7 +93,7 @@
                       <File Id='PsistatsServiceXmlFile'
                         Name='psistats-service.xml'
                         DiskId='1'
-                        Source='psistats-service.xml'
+                        Source='wix\psistats-service.xml'
                         KeyPath='yes'/>
                     </Component>
 
